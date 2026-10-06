@@ -49,13 +49,20 @@ sudo ./docker-collect.sh
 | | `journalctl -u docker -u containerd`, `-u ssh -u sshd`, liste des boots | `host/journal/` |
 | | `systemctl list-units/list-unit-files/list-timers`, membres du groupe `docker` | `host/persistence/` |
 | | `/var/log/auth.log*`, `/var/log/secure*`, `passwd`, `group`, `sudoers`, crontabs (`/etc/cron*`, `/var/spool/cron`), `/etc/systemd/system`, `rc.local`, `ld.so.preload`, `profile.d`, `sshd_config`, `/etc/docker`, **historiques shell** et **`~/.ssh/`** (dont `authorized_keys`) de tous les comptes | `host/fs/` (+ `host/fs_listing.txt`) |
-| 2. Docker | version, info, ps, images, réseaux, volumes, `system df`, `daemon.json`, `docker events` (30 j) | `host/` |
+| 2. Docker | version, info, ps, images, réseaux, volumes, `system df`, `daemon.json`, `docker events` (tout ce que le daemon a en mémoire) | `host/` |
 | 3-4. Conteneurs | `inspect`, `diff`, `port`, montages, `top`, `stats`, `docker logs` (stdout/stderr), logs bruts du daemon avec rotations, export du filesystem (option) | `containers/<id>_<nom>/` |
 | 5. Volumes (option) | volumes nommés, bind mounts, listing MAC times avant copie | `volumes/`, `containers/*/binds/` |
 | 6. Images | `docker save`, `inspect`, `history` | `images/` |
 | 7. Intégrité | `SHA256SUMS`, archive `.tar.gz` et son empreinte | |
 
 `--no-host` désactive l'étape 1, et `--journal-since -7d` limite la profondeur de journalctl.
+
+**Durée** : par défaut, aucune limite. Tout ce que le serveur a conservé est collecté
+(logs des conteneurs depuis leur création, journald, auth.log et ses rotations, wtmp,
+docker events). Pour limiter : `--since`/`--until` (sortie de `docker logs` uniquement,
+les fichiers bruts restent complets), `--journal-since`, `--events-days`.
+⚠ `docker events` n'est conservé qu'en mémoire par le daemon (environ 1000 événements,
+perdus au redémarrage de Docker).
 `./docker-collect.sh -h` affiche toutes les options.
 
 ## Ce que le script ne fait pas

@@ -33,7 +33,7 @@ EXPORT_FS=0
 RAW_LOGS=1
 ARCHIVE=1
 EVENTS=1
-EVENTS_DAYS=30
+EVENTS_DAYS=0
 SINCE=""
 UNTIL=""
 VOLUMES=0
@@ -86,7 +86,7 @@ Options de collecte
                               ⚠ inclut les modifs runtime, PAS les volumes. Peut être volumineux.
       --no-raw                Ne pas copier les fichiers de logs bruts du daemon
       --no-events             Ne pas collecter docker events
-      --events-days N         Profondeur docker events en jours (défaut : 30)
+      --events-days N         Limiter docker events aux N derniers jours (défaut : 0 = tout)
       --no-archive            Ne pas créer l'archive .tar.gz finale
 
 Volumes (désactivé par défaut)
@@ -156,7 +156,7 @@ while [[ $# -gt 0 ]]; do
     --export-fs)       EXPORT_FS=1; shift ;;
     --no-raw)          RAW_LOGS=0; shift ;;
     --no-events)       EVENTS=0; shift ;;
-    --events-days)     EVENTS_DAYS="${2:-30}"; shift 2 ;;
+    --events-days)     EVENTS_DAYS="${2:-0}"; shift 2 ;;
     --no-archive)      ARCHIVE=0; shift ;;
     --volumes)         VOLUMES=1; shift ;;
     --include-binds)   VOLUMES=1; INCLUDE_BINDS=1; shift ;;
@@ -464,7 +464,7 @@ mapfile -t _vols < <(rdocker volume ls -q 2>>"$ERR")
 (( ${#_vols[@]} )) && rdocker volume inspect "${_vols[@]}" > "$OUTDIR/host/volumes_inspect.json" 2>>"$ERR"
 
 if [[ $EVENTS -eq 1 ]]; then
-  now="$(rhost date +%s 2>/dev/null)"; now="${now:-$(date +%s)}"; from=$(( now - EVENTS_DAYS * 86400 ))
+  now="$(rhost date +%s 2>/dev/null)"; now="${now:-$(date +%s)}"; from=$(( now - EVENTS_DAYS * 86400 )); (( EVENTS_DAYS > 0 )) || from=0
   capture "$OUTDIR/host/docker_events.jsonl" rdocker events --since "$from" --until "$now" --format '{{json .}}'
 fi
 
